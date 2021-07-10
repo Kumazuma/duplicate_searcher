@@ -9,14 +9,14 @@ include_directories(AFTER include "include")
 include_directories(AFTER include src)
 include_directories(AFTER include ${CMAKE_SOURCE_DIR}/lsh/include)
 FILE(GLOB generated_src src/generated/*.cpp)
-
+set(CMAKE_CXX_STANDARD 17)
 set(SOURCES 
 	${generated_src}
-	"src/app/app.cpp"
-	"src/searcher/searcher.cpp"
-	"src/hashkey/hashkey.cpp"
-	"src/mainform/mainform.cpp"
-	)
+	"src/app.cpp"
+	"src/searcher.cpp"
+	"src/hashkey.cpp"
+	"src/mainform.cpp"
+	 "src/duplicate_file_view_model.cpp")
 add_executable(cmake-wx WIN32 ${SOURCES})
 target_link_libraries(cmake-wx ${wxWidgets_LIBRARIES})
 target_link_libraries(cmake-wx lsh)

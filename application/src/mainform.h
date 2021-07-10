@@ -1,4 +1,5 @@
-#include "../generated/form.h"
+#pragma once
+#include "generated/form.h"
 
 class MainForm : public GUIMainFrame
 {

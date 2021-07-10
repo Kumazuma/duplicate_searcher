@@ -2,7 +2,8 @@
 #include <wx/dir.h>
 #include<lsh/lsh.h>
 #include <wx/file.h>
-
+#include <wx/stream.h>
+#include <wx/wfstream.h>
 wxDEFINE_EVENT(EVT_SEARCHER_SUCCESS, wxThreadEvent);
 wxDEFINE_EVENT(EVT_SEARCHER_PROCESS, wxThreadEvent);
 
@@ -98,17 +99,19 @@ void Searcher::Process()
         uint8_t chunk[1024 * 8];
         LSH_Context context;
         lsh_init(&context, LSH_TYPE_256);
-        while (!file.Eof())
+        wxFileInputStream fis{ file };
+        wxBufferedInputStream bufferInput{ fis, 1024 * 32};
+        while (!bufferInput.Eof())
         {
-            auto size = file.Read(chunk, sizeof(chunk));
+            auto size{ bufferInput.Read(chunk, sizeof(chunk)).LastRead() };
             if (size != 0)
                 lsh_update(&context, chunk, size);
             if (!isRunning)
                 return;
         }
+
         std::array<uint8_t, 256 / 8> hash;
         lsh_final(&context, hash.data());
-        file.Close();
         ++i;
         duplicatedList[hash].push_back(filePath);
         auto evt{ new wxThreadEvent{EVT_SEARCHER_PROCESS} };

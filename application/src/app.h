@@ -1,5 +1,7 @@
+#pragma once
 #include<wx/wx.h>
-#include"../searcher/searcher.h"
+#include<wx/dataview.h>
+#include"searcher.h"
 class App : public wxApp
 {
 public:
@@ -12,6 +14,8 @@ protected:
 private:
 	wxFrame* frame;
 	Searcher* searcher;
+	wxDataViewModel* viewModel;
+	std::unordered_map<HashKey, std::vector<wxString> > table;
 };
 
 wxDECLARE_APP(App);

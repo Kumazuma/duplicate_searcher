@@ -1,9 +1,10 @@
+#pragma once
 #include<wx/wx.h>
 #include<vector>
 #include<unordered_map>
 #include<array>
 #include<thread>
-#include"hashkey/hashkey.h"
+#include"hashkey.h"
 
 class Searcher: public wxEvtHandler
 {

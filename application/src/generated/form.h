@@ -17,7 +17,7 @@
 #include <wx/settings.h>
 #include <wx/sizer.h>
 #include <wx/panel.h>
-#include <wx/listctrl.h>
+#include <wx/dataview.h>
 #include <wx/splitter.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
@@ -45,7 +45,7 @@ class GUIMainFrame : public wxFrame
 		wxPanel* m_panel1;
 		wxGenericDirCtrl* m_genericDirCtrl2;
 		wxPanel* m_panel2;
-		wxListCtrl* reportCtrl;
+		wxDataViewCtrl* m_dataViewCtrl1;
 		wxButton* m_button1;
 		wxTextCtrl* m_textCtrl1;
 

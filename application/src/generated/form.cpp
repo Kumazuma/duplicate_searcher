@@ -36,8 +36,8 @@ GUIMainFrame::GUIMainFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 
-	reportCtrl = new wxListCtrl( m_panel2, ID_REPORT, wxDefaultPosition, wxDefaultSize, wxLC_REPORT );
-	bSizer3->Add( reportCtrl, 1, wxEXPAND, 5 );
+	m_dataViewCtrl1 = new wxDataViewCtrl( m_panel2, ID_REPORT, wxDefaultPosition, wxDefaultSize, wxDV_SINGLE );
+	bSizer3->Add( m_dataViewCtrl1, 1, wxEXPAND, 5 );
 
 
 	m_panel2->SetSizer( bSizer3 );

@@ -21,6 +21,11 @@ bool HashKey::operator==(const HashKey& rhs) const
 	return memcmp(rhs.key.data(), key.data(), 32) == 0;
 }
 
+bool HashKey::operator<(const HashKey& rhs) const
+{
+	return memcmp(key.data() , rhs.key.data(), 32) < 0;
+}
+
 namespace std
 {
 
