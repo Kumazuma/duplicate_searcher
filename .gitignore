@@ -364,3 +364,4 @@ FodyWeavers.xsd
 /lsh/build
 /lsh/CMakeSettings.json
 /CMakeSettings.json
+/application/cmake/modules
