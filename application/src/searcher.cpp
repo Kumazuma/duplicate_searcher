@@ -4,34 +4,36 @@
 #include <wx/file.h>
 #include <wx/stream.h>
 #include <wx/wfstream.h>
+#include <wx/filename.h>
+#include <unordered_set>
 wxDEFINE_EVENT(EVT_SEARCHER_SUCCESS, wxThreadEvent);
 wxDEFINE_EVENT(EVT_SEARCHER_PROCESS, wxThreadEvent);
 
 class TravellerGetDir : public wxDirTraverser
 {
 public:
-    TravellerGetDir(std::vector<wxString>& directory) : directory{ directory } { }
+    TravellerGetDir(std::unordered_set<wxString>& directory) : directory{ directory } { }
     virtual wxDirTraverseResult OnFile(const wxString&)
     {
         return wxDIR_CONTINUE;
     }
     virtual wxDirTraverseResult OnDir(const wxString& dirname)
     {
-        directory.push_back(dirname);
+        directory.emplace(dirname);
         return wxDIR_CONTINUE;
     }
 private:
-	std::vector<wxString>& directory;
+	std::unordered_set<wxString>& directory;
 };
 
 class TravellerGetFiles : public wxDirTraverser
 {
 public:
-    TravellerGetFiles(std::vector<wxString>& files, wxRegEx& regex) : files{ files }, regex{ regex }{ }
+    TravellerGetFiles(std::unordered_set<wxString>& files, wxRegEx& regex) : files{ files }, regex{ regex }{ }
     virtual wxDirTraverseResult OnFile(const wxString& fileName)
     {
         if (regex.Matches(fileName))
-            files.push_back(fileName);
+            files.emplace(fileName);
         return wxDIR_CONTINUE;
     }
     virtual wxDirTraverseResult OnDir(const wxString& dirname)
@@ -39,7 +41,7 @@ public:
         return wxDIR_CONTINUE;
     }
 private:
-    std::vector<wxString>& files;
+    std::unordered_set<wxString>& files;
     wxRegEx& regex;
 };
 
@@ -107,9 +109,10 @@ void Searcher::Run()
 
 void Searcher::Process()
 {
-    std::vector<wxString> directories;
-    std::vector<wxString> files;
-
+    std::unordered_set<wxString> directories;
+    std::unordered_set<wxString> files;
+    files.reserve(4096);
+    directories.reserve(4096);
     TravellerGetDir travellerDir{ directories };
     TravellerGetFiles travellerFiles{ files, this->regex };
     for (const auto& path : targetPaths)
@@ -119,7 +122,7 @@ void Searcher::Process()
         if (!wxDir::Exists(path))
             continue;
         
-        directories.push_back(path);
+        directories.emplace(path);
         wxDir dir{ path };
         dir.Traverse(travellerDir);
     }
@@ -133,9 +136,12 @@ void Searcher::Process()
     int i{};
     for (auto& filePath : files)
     {
+        ++i;
         if (!isRunning)
             return;
         wxFile file;
+        if (!wxFileName::IsFileReadable(filePath))
+            continue;
         if (!file.Open(filePath))
             continue;
         uint8_t chunk[1024 * 8];
@@ -154,7 +160,6 @@ void Searcher::Process()
 
         std::array<uint8_t, 256 / 8> hash;
         lsh_final(&context, hash.data());
-        ++i;
         duplicatedList[hash].push_back(filePath);
         auto evt{ new wxThreadEvent{EVT_SEARCHER_PROCESS} };
         evt->SetPayload(std::make_pair(i, static_cast<int>(files.size())));

@@ -21,9 +21,9 @@
 #include <wx/image.h>
 #include <wx/icon.h>
 #include <wx/button.h>
+#include <wx/stattext.h>
 #include <wx/listbox.h>
 #include <wx/splitter.h>
-#include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/gauge.h>
 #include <wx/dataview.h>
@@ -33,12 +33,17 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #define ID_DIR_CTRL 1000
-#define ID_EXT_FILTER_CTRL 1001
-#define ID_START_CTRL 1002
-#define ID_PROGRESS 1003
-#define ID_REPORT 1004
-#define ID_DEL_SEL_FILES 1005
-#define ID_MOVE_SEL_FILES_TO 1006
+#define ID_ADD_DIR_CTRL 1001
+#define ID_REMOVE_DIR_CTRL 1002
+#define ID_INCLUDE_DIR 1003
+#define ID_EXT_FILTER_CTRL 1004
+#define ID_START_CTRL 1005
+#define ID_STOP_CTRL 1006
+#define ID_PROGRESS 1007
+#define ID_PROGRESS_TEXT 1008
+#define ID_REPORT 1009
+#define ID_DEL_SEL_FILES 1010
+#define ID_MOVE_SEL_FILES_TO 1011
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class GUIMainFrame
@@ -55,11 +60,14 @@ class GUIMainFrame : public wxFrame
 		wxPanel* m_panel2;
 		wxButton* m_button2;
 		wxButton* m_button3;
+		wxStaticText* m_staticText7;
 		wxListBox* m_listBox1;
 		wxStaticText* m_staticText1;
 		wxTextCtrl* m_textCtrl2;
 		wxButton* m_button1;
+		wxButton* m_button28;
 		wxGauge* m_gauge1;
+		wxStaticText* m_staticText6;
 		wxPanel* m_panel13;
 		wxDataViewCtrl* m_dataViewCtrl1;
 		wxButton* m_button4;
@@ -67,7 +75,7 @@ class GUIMainFrame : public wxFrame
 
 	public:
 
-		GUIMainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		GUIMainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 837,676 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		wxAuiManager m_mgr;
 
 		~GUIMainFrame();

@@ -45,17 +45,27 @@ GUIMainFrame::GUIMainFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 	wxBoxSizer* bSizer3;
 	bSizer3 = new wxBoxSizer( wxVERTICAL );
 
-	m_button2 = new wxButton( m_panel2, wxID_ANY, wxT("→"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_button2 = new wxButton( m_panel2, ID_ADD_DIR_CTRL, wxT("→"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer3->Add( m_button2, 1, 0, 5 );
 
-	m_button3 = new wxButton( m_panel2, wxID_ANY, wxT("←"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_button3 = new wxButton( m_panel2, ID_REMOVE_DIR_CTRL, wxT("←"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer3->Add( m_button3, 1, 0, 5 );
 
 
 	bSizer4->Add( bSizer3, 0, wxEXPAND, 5 );
 
-	m_listBox1 = new wxListBox( m_panel2, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, 0 );
-	bSizer4->Add( m_listBox1, 1, wxEXPAND, 5 );
+	wxBoxSizer* bSizer39;
+	bSizer39 = new wxBoxSizer( wxVERTICAL );
+
+	m_staticText7 = new wxStaticText( m_panel2, wxID_ANY, wxT("Directories for search"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText7->Wrap( -1 );
+	bSizer39->Add( m_staticText7, 0, wxALL, 5 );
+
+	m_listBox1 = new wxListBox( m_panel2, ID_INCLUDE_DIR, wxDefaultPosition, wxDefaultSize, 0, NULL, wxLB_MULTIPLE );
+	bSizer39->Add( m_listBox1, 1, wxEXPAND, 5 );
+
+
+	bSizer4->Add( bSizer39, 1, wxEXPAND, 5 );
 
 
 	m_panel2->SetSizer( bSizer4 );
@@ -77,12 +87,35 @@ GUIMainFrame::GUIMainFrame( wxWindow* parent, wxWindowID id, const wxString& tit
 
 	bSizer26->Add( bSizer8, 0, wxEXPAND, 5 );
 
+	wxBoxSizer* bSizer38;
+	bSizer38 = new wxBoxSizer( wxHORIZONTAL );
+
 	m_button1 = new wxButton( m_panel8, ID_START_CTRL, wxT("Start"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer26->Add( m_button1, 0, wxALL|wxEXPAND, 5 );
+	bSizer38->Add( m_button1, 1, wxALL, 5 );
+
+	m_button28 = new wxButton( m_panel8, ID_STOP_CTRL, wxT("stop"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_button28->Enable( false );
+
+	bSizer38->Add( m_button28, 1, wxALL, 5 );
+
+
+	bSizer26->Add( bSizer38, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizer37;
+	bSizer37 = new wxBoxSizer( wxHORIZONTAL );
 
 	m_gauge1 = new wxGauge( m_panel8, ID_PROGRESS, 100, wxDefaultPosition, wxDefaultSize, wxGA_HORIZONTAL );
 	m_gauge1->SetValue( 0 );
-	bSizer26->Add( m_gauge1, 0, wxEXPAND|wxALL, 5 );
+	bSizer37->Add( m_gauge1, 1, wxALL, 5 );
+
+	m_staticText6 = new wxStaticText( m_panel8, ID_PROGRESS_TEXT, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText6->Wrap( -1 );
+	m_staticText6->SetMinSize( wxSize( 80,-1 ) );
+
+	bSizer37->Add( m_staticText6, 0, wxALL, 5 );
+
+
+	bSizer26->Add( bSizer37, 0, wxEXPAND, 5 );
 
 
 	m_panel8->SetSizer( bSizer26 );

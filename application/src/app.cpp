@@ -9,9 +9,12 @@ bool App::OnInit()
 	frame = new MainForm{};
 	frame->Show();
 	frame->Bind(wxEVT_BUTTON, &App::OnClickStart, this, ID_START_CTRL);
+	frame->Bind(wxEVT_BUTTON, &App::OnClickStop, this, ID_STOP_CTRL);
 	frame->Bind(wxEVT_BUTTON, &App::OnClickDelectSelctedFiles, this, ID_DEL_SEL_FILES);
 	frame->Bind(wxEVT_BUTTON, &App::OnClickMoveFilesTo, this, ID_MOVE_SEL_FILES_TO);
-
+	frame->Bind(wxEVT_LEFT_DCLICK, &App::OnDClickDirTree, this, ID_DIR_CTRL);
+	frame->Bind(wxEVT_BUTTON, &App::OnClickAddDir, this, ID_ADD_DIR_CTRL);
+	frame->Bind(wxEVT_BUTTON, &App::OnClickRemoveDir, this, ID_REMOVE_DIR_CTRL);
 	viewModel = new DuplicateFileViewModel{ table, selectedFilesTable };
 	auto reportCtrl{ wxDynamicCast(frame->FindWindowById(ID_REPORT), wxDataViewCtrl) };
 	reportCtrl->AssociateModel(viewModel);
@@ -31,16 +34,16 @@ void App::OnClickStart(wxCommandEvent& event)
 {
 	auto dirCtrl{ wxDynamicCast(frame->FindWindowById(ID_DIR_CTRL), wxGenericDirCtrl) };
 	auto startBtn{ wxDynamicCast(frame->FindWindowById(ID_START_CTRL), wxButton) };
+	auto stopBtn{ wxDynamicCast(frame->FindWindowById(ID_STOP_CTRL), wxButton) };
 	auto filterCtrl{ wxDynamicCast(frame->FindWindowById(ID_EXT_FILTER_CTRL), wxTextCtrl) };
 	auto filter{ filterCtrl->GetValue().Trim() };
 	auto exts{ wxSplit(filter, wxT(' ')) };
 
-	wxArrayString filePaths;
-	std::vector<wxString> arr;
-	dirCtrl->GetPaths(filePaths);
-	arr.reserve(filePaths.size());
+	if (incPaths.size() == 0)
+		return;
 	if (searcher != nullptr)
 		delete searcher;
+
 	searcher = new Searcher(this);
 	if (exts.size() != 0 && !searcher->SetFileExtFilter(exts))
 	{
@@ -52,11 +55,25 @@ void App::OnClickStart(wxCommandEvent& event)
 
 	searcher->Bind(EVT_SEARCHER_PROCESS, &App::OnProcessSearch, this);
 	searcher->Bind(EVT_SEARCHER_SUCCESS, &App::OnProcessSuccess, this);
-	for (auto& dir : filePaths)
-		arr.emplace_back(std::move(dir));
+	std::vector<wxString> arr;
+	arr.reserve(incPaths.size());
+	for (auto& dir : incPaths)
+		arr.emplace_back(dir.first);
 	searcher->SetTargetPaths(std::move(arr));
 	startBtn->Enable(false);
+	stopBtn->Enable(true);
 	searcher->Run();
+}
+
+void App::OnClickStop(wxCommandEvent& event)
+{
+	if (searcher != nullptr)
+		delete searcher;
+	searcher = nullptr;
+	auto startBtn{ wxDynamicCast(frame->FindWindowById(ID_START_CTRL), wxButton) };
+	auto stopBtn{ wxDynamicCast(frame->FindWindowById(ID_STOP_CTRL), wxButton) };
+	startBtn->Enable();
+	stopBtn->Enable(false);
 }
 
 void App::OnClickDelectSelctedFiles(wxCommandEvent& event)
@@ -116,7 +133,7 @@ void App::OnClickMoveFilesTo(wxCommandEvent& event)
 void App::OnProcessSearch(wxThreadEvent& event)
 {
 	auto process{ event.GetPayload<std::pair<int, int>>() };
-	auto msg{ wxString::Format(wxT("%d/%d ¿Ï·á\n"), process.first,process.second) };
+	auto msg{ wxString::Format(wxT("%d/%d (%.00f)\n"), process.first, process.second, process.first * 100.0 / static_cast<double>(process.second)) };
 	auto gauge{ wxDynamicCast(frame->FindWindowById(ID_PROGRESS), wxGauge) };
 	gauge->Freeze();
 	if (gauge->GetRange() != process.second)
@@ -125,18 +142,71 @@ void App::OnProcessSearch(wxThreadEvent& event)
 	}
 	gauge->SetValue(process.first);
 	gauge->Thaw();
-	wxPrintf(msg);
+	wxDynamicCast(frame->FindWindowById(ID_PROGRESS_TEXT), wxStaticText)->SetLabelText(msg);
 }
 
 void App::OnProcessSuccess(wxThreadEvent& event)
 {
 	auto startBtn{ wxDynamicCast(frame->FindWindowById(ID_START_CTRL), wxButton) };
+	auto stopBtn{ wxDynamicCast(frame->FindWindowById(ID_STOP_CTRL), wxButton) };
 
 	startBtn->Enable();
+	stopBtn->Enable(false);
 
 	table.clear();
+	selectedFilesTable.clear();
 	searcher->GetDuplicateFiles(&table);
 	UpdateViewModel();
+}
+
+void App::OnDClickDirTree(wxMouseEvent& event)
+{
+	auto dirCtrl{ wxDynamicCast(frame->FindWindowById(ID_DIR_CTRL), wxGenericDirCtrl) };
+	auto inclCtrl{ wxDynamicCast(frame->FindWindowById(ID_INCLUDE_DIR), wxListBox) };
+	wxString path{ dirCtrl->GetPath() };
+	if (incPaths.find(path) != incPaths.end())
+		return;
+	int n{ inclCtrl->Append(path) };
+	incPaths.emplace(path, n);
+}
+
+void App::OnClickAddDir(wxCommandEvent& event)
+{
+	auto dirCtrl{ wxDynamicCast(frame->FindWindowById(ID_DIR_CTRL), wxGenericDirCtrl) };
+	auto inclCtrl{ wxDynamicCast(frame->FindWindowById(ID_INCLUDE_DIR), wxListBox) };
+	wxArrayString paths{  };
+	dirCtrl->GetPaths(paths);
+	inclCtrl->Freeze();
+	for (auto& path : paths)
+	{
+		if (incPaths.find(path) != incPaths.end())
+			return;
+		int n{ inclCtrl->Append(path) };
+		incPaths.emplace(path, n);
+	}
+	inclCtrl->Thaw();
+}
+
+void App::OnClickRemoveDir(wxCommandEvent& event)
+{
+	auto inclCtrl{ wxDynamicCast(frame->FindWindowById(ID_INCLUDE_DIR), wxListBox) };
+	inclCtrl->Freeze();
+	wxArrayInt selectionIndics;
+	auto selections{ inclCtrl->GetStrings() };
+	inclCtrl->GetSelections(selectionIndics);
+	auto it{ selectionIndics.rbegin() };
+	auto end{ selectionIndics.rend() };
+	for (; it != end; ++it)
+	{
+		inclCtrl->Delete(*it);
+	}
+
+	for (auto& path : selections)
+	{
+		incPaths.erase(path);
+	}
+
+	inclCtrl->Thaw();
 }
 
 void App::UpdateViewModel()
