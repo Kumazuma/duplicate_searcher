@@ -1,33 +1,27 @@
 #include"duplicate_file_view_model.h"
 #include<wx/filename.h>
-DuplicateFileViewModel::DuplicateFileViewModel(std::unordered_map<HashKey, std::vector<wxString>>& model):
-	model{model}
+DuplicateFileViewModel::DuplicateFileViewModel(std::unordered_map<HashKey, std::vector<wxString>>& model, std::unordered_map<HashKey, std::unordered_set<wxString>>& selectedFilesTable):
+	model{model},
+	selectedFilesTable{ selectedFilesTable }
 {
 
 	for (auto& pair : model)
 	{
 		auto it{ groupNodes.emplace(pair.first, pair.first).first };
-		auto& selectList{ this->selectList[pair.first] };
-		selectList.reserve(model[pair.first].size());
 		auto& nodes{ fileNodes[pair.first] };
 		nodes.reserve(model[pair.first].size());
+		selectedFilesTable.insert_or_assign(pair.first, std::unordered_set<wxString>{});
 	}
 	for (auto& pair : model)
 	{
 		auto& it{ groupNodes.at(pair.first) };
-		auto& selectList{ this->selectList[pair.first] };
 		auto& nodes{ fileNodes[pair.first] };
 		for (auto& file : model[pair.first])
 		{
 			nodes.push_back(file);
-			size_t index{ selectList.size() };
-			selectList.push_back(false);
-			indices[file] = index;
 			parents.emplace(file, &it);
 		}
 	}
-
-
 }
 
 wxString DuplicateFileViewModel::GetColumnType(unsigned int col) const
@@ -53,8 +47,44 @@ int DuplicateFileViewModel::Compare(const wxDataViewItem& item1, const wxDataVie
 
 unsigned int DuplicateFileViewModel::GetColumnCount() const
 {
-	return 2;
+	return 3;
 }
+#ifdef WIN32
+static std::list<std::wstring> g_DateFormats;
+BOOL CALLBACK EnumDateFormatsProc(_In_ LPWSTR lpDateFormatString) {
+	// Store each format in the global list of dateformats.
+	g_DateFormats.push_back(lpDateFormatString);
+	return TRUE;
+}
+
+std::wstring GetShortDatePattern() {
+	if (g_DateFormats.size() == 0 &&
+		// Enumerate all system default short dateformats; EnumDateFormatsProc is
+		// called for each dateformat.
+		!::EnumDateFormats(EnumDateFormatsProc,
+			LOCALE_SYSTEM_DEFAULT,
+			0)) {
+		throw std::runtime_error("EnumDateFormatsW");
+	}
+	// There can be more than one short date format. Arbitrarily pick the first one:
+	return g_DateFormats.front();
+}
+
+std::wstring GetShortTimePattern() {
+	g_DateFormats.clear();
+	if (g_DateFormats.size() == 0 &&
+		// Enumerate all system default short dateformats; EnumDateFormatsProc is
+		// called for each dateformat.
+		!::EnumTimeFormatsW(EnumDateFormatsProc,
+			LOCALE_SYSTEM_DEFAULT,
+			0)) {
+		throw std::runtime_error("EnumTimeFormatsW");
+	}
+	// There can be more than one short date format. Arbitrarily pick the first one:
+	return g_DateFormats.front();
+}
+#endif
+
 
 void DuplicateFileViewModel::GetValue(wxVariant& variant, const wxDataViewItem& item, unsigned int col) const
 {
@@ -66,12 +96,14 @@ void DuplicateFileViewModel::GetValue(wxVariant& variant, const wxDataViewItem& 
 	{
 		bool select{ true };
 		wxString text;
+		auto& selectedFiles{ selectedFilesTable.at(hashkey) };
+		auto& files{ model.at(hashkey) };
 		switch (col)
 		{
 		case 0:
-			for (auto const& it: selectList[hashkey])
+			for (auto const& it: files)
 			{
-				select = select && it;
+				select = select && selectedFiles.find(it) != selectedFiles.end();
 			}
 
 			for (int i = 0; i < 8; ++i)
@@ -79,8 +111,8 @@ void DuplicateFileViewModel::GetValue(wxVariant& variant, const wxDataViewItem& 
 				text += wxString::Format(wxT("%02X%02X%02X%02X-"),
 					hashkey[i * 4 + 0], hashkey[i * 4 + 1], hashkey[i * 4 + 2], hashkey[i * 4 + 3]);
 			}
-			state = select ? wxCHK_CHECKED : wxCHK_UNCHECKED;
 			text.erase(text.length() - 1);
+			state = select ? wxCHK_CHECKED : wxCHK_UNCHECKED;
 			variant << wxDataViewCheckIconText(text, wxNullIcon, state);
 			break;
 		case 1:
@@ -93,27 +125,31 @@ void DuplicateFileViewModel::GetValue(wxVariant& variant, const wxDataViewItem& 
 	if (&hashkey == nullptr)
 	{
 		auto& path{ *std::get_if<wxString>(&node) };
+		wxFileName fileName{ path };
 		uint64_t filesize;
 		
 		switch (col)
 		{
 		case 0:
 		{
-			auto& parent{ parents[path] };
-			auto& index{ indices[path] };
-			state = selectList[std::get<HashKey>(*parent)][index] ? wxCHK_CHECKED : wxCHK_UNCHECKED;
+			auto& parent{ parents.at(path) };
+			auto& hashkey{ std::get<HashKey>(*parent) };
+			auto& selectedFiles{ selectedFilesTable.at(hashkey) };
+			auto select{ selectedFiles.find(path) != selectedFiles.end() };
+			state = select ? wxCHK_CHECKED : wxCHK_UNCHECKED;
 			variant << wxDataViewCheckIconText(path, wxNullIcon, state);
 		}
-			break;
+		break;
 		case 1:
-			filesize = wxFileName::GetSize(path).GetValue();
+
+			filesize = fileName.GetSize().GetValue();
 			if (filesize < 1024)
 			{
 				variant = wxString::Format(wxT("%d bytes"), (int)filesize);
 			}
-			else if(filesize < 1024 * 1024)
+			else if (filesize < 1024 * 1024)
 			{
-				variant = wxString::Format(wxT("%f kib"), filesize /1024.0);
+				variant = wxString::Format(wxT("%f kib"), filesize / 1024.0);
 			}
 			else if (filesize < 1024 * 1024 * 1024)
 			{
@@ -124,6 +160,35 @@ void DuplicateFileViewModel::GetValue(wxVariant& variant, const wxDataViewItem& 
 				variant = wxString::Format(wxT("%f gib"), filesize / (1024.0 * 1024.0 * 1024.0));
 			}
 			break;
+		case 2:
+		{
+			auto locale{ wxLocale::GetSystemLanguage() };
+			wxDateTime creationDt;
+			wxDateTime modifiedDt;
+			wxDateTime accessDt;
+			wxString str;
+			fileName.GetTimes(&accessDt, &modifiedDt, &creationDt);
+#ifdef WIN32
+			SYSTEMTIME now;
+			GetLocalTime(&now);
+
+			TCHAR date[64];
+			TCHAR time[64];
+			TCHAR fmt[64];
+			SYSTEMTIME systime;
+			modifiedDt.GetAsMSWSysTime(&systime);
+			GetDateFormat(LOCALE_USER_DEFAULT, DATE_SHORTDATE, &systime, NULL, date, 64);
+			GetTimeFormat(LOCALE_USER_DEFAULT, TIME_NOSECONDS, &systime, NULL, time, 64);
+
+			str = date;
+			str += wxT(" ");
+			str += time;
+#else
+			str = modifiedDt.Format();
+#endif
+			variant = str;
+		}
+		break;
 		}
 	}
 }
@@ -143,12 +208,20 @@ bool DuplicateFileViewModel::SetValue(const wxVariant& variant, const wxDataView
 
 	if (hashkey != nullptr)
 	{
-
-		auto& selects{ selectList[*hashkey] };
-		for (auto & it : selects)
+		auto& selects{ selectedFilesTable[*hashkey] };
+		if (select)
 		{
-			it = select;
+			auto& table{ model[*hashkey] };
+			for (auto& it: table)
+			{
+				selects.insert(it);
+			}
 		}
+		else
+		{
+			selects.clear();
+		}
+
 		wxDataViewItemArray arr;
 		for (auto& it : fileNodes[*hashkey])
 		{
@@ -161,9 +234,16 @@ bool DuplicateFileViewModel::SetValue(const wxVariant& variant, const wxDataView
 	{
 		auto& file{ *std::get_if<wxString>(&node) };
 		auto parent{ parents.at(file) };
-		hashkey = std::get_if<HashKey>(parent);
-		size_t index{ indices.at(file) };
-		selectList[*hashkey][index] = select;
+		hashkey = &std::get<HashKey>(*parent);
+		auto& selectedFiles{ selectedFilesTable[*hashkey] };
+		if (select)
+		{
+			selectedFiles.insert(file);
+		}
+		else
+		{
+			selectedFiles.erase(file);
+		}
 		//ItemChanged(wxDataViewItem{ parent });
 		ItemChanged(wxDataViewItem{ parent });
 		return true;
@@ -198,7 +278,7 @@ wxDataViewItem DuplicateFileViewModel::GetParent(const wxDataViewItem& item) con
 	if (file == nullptr)
 		return wxDataViewItem{ nullptr };
 
-	return wxDataViewItem{ parents[*file] };
+	return wxDataViewItem{ const_cast<std::variant<HashKey,wxString>*>(parents.at(*file)) };
 }
 
 unsigned int DuplicateFileViewModel::GetChildren(const wxDataViewItem& parent, wxDataViewItemArray& array) const
@@ -209,7 +289,7 @@ unsigned int DuplicateFileViewModel::GetChildren(const wxDataViewItem& parent, w
 		// Root items.
 		for (auto& pair : groupNodes)
 		{
-			array.Add(wxDataViewItem{ &pair.second });
+			array.Add(wxDataViewItem{ const_cast<std::variant<HashKey,wxString>*>( &pair.second )});
 		}
 		return array.size();
 	}
@@ -218,10 +298,10 @@ unsigned int DuplicateFileViewModel::GetChildren(const wxDataViewItem& parent, w
 	if (hashkey == nullptr)
 		return 0;
 
-	auto& nodes{ fileNodes[*hashkey] };
+	auto& nodes{ fileNodes.at(*hashkey) };
 	for (auto& file : nodes)
 	{
-		array.Add(wxDataViewItem{ &file });
+		array.Add(wxDataViewItem{ const_cast<std::variant<HashKey,wxString>*>(&file) });
 	}
 	return array.size();
 }

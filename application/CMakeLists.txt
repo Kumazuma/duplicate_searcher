@@ -3,7 +3,7 @@ project(cmake-wx VERSION 0.1.0)
 
 include(CTest)
 enable_testing()
-find_package(wxWidgets REQUIRED COMPONENTS net core base aui)
+find_package(wxWidgets REQUIRED COMPONENTS core base aui)
 include(${wxWidgets_USE_FILE})
 include_directories(AFTER include "include")
 include_directories(AFTER include src)

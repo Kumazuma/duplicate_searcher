@@ -2,13 +2,14 @@
 #include<wx/wx.h>
 #include<wx/dataview.h>
 #include<unordered_map>
+#include<unordered_set>
 #include<hashkey.h>
 #include<variant>
 #include<map>
 class DuplicateFileViewModel : public wxDataViewModel
 {
 public:
-	DuplicateFileViewModel(std::unordered_map<HashKey, std::vector<wxString>>& model);
+	DuplicateFileViewModel(std::unordered_map<HashKey, std::vector<wxString>>& model, std::unordered_map<HashKey, std::unordered_set<wxString>>& selectedFilesTable);
 	virtual wxString GetColumnType(unsigned int col)const override;
 	virtual int Compare(const wxDataViewItem& item1, const wxDataViewItem& item2, unsigned int column, bool ascending) const override;
 	virtual unsigned int GetColumnCount() const override;
@@ -20,9 +21,9 @@ public:
 	virtual unsigned int GetChildren(const wxDataViewItem& parent, wxDataViewItemArray& array) const override;
 private:
 	std::unordered_map<HashKey, std::vector<wxString>>& model;
-	mutable std::unordered_map<HashKey, std::variant<HashKey, wxString>> groupNodes;
-	mutable std::unordered_map<HashKey, std::vector<std::variant<HashKey, wxString>>> fileNodes;
-	mutable std::unordered_map<wxString, std::variant<HashKey, wxString>*> parents;
-	mutable std::unordered_map<wxString, size_t> indices;
-	mutable std::unordered_map<HashKey, std::vector<bool>> selectList;
+	std::unordered_map<HashKey, std::unordered_set<wxString>>& selectedFilesTable;
+	
+	std::unordered_map<HashKey, std::variant<HashKey, wxString>> groupNodes;
+	std::unordered_map<HashKey, std::vector<std::variant<HashKey, wxString>>> fileNodes;
+	std::unordered_map<wxString, std::variant<HashKey, wxString>*> parents;
 };

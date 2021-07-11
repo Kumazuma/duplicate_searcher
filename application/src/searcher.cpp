@@ -24,12 +24,32 @@ private:
 	std::vector<wxString>& directory;
 };
 
+class TravellerGetFiles : public wxDirTraverser
+{
+public:
+    TravellerGetFiles(std::vector<wxString>& files, wxRegEx& regex) : files{ files }, regex{ regex }{ }
+    virtual wxDirTraverseResult OnFile(const wxString& fileName)
+    {
+        if (regex.Matches(fileName))
+            files.push_back(fileName);
+        return wxDIR_CONTINUE;
+    }
+    virtual wxDirTraverseResult OnDir(const wxString& dirname)
+    {
+        return wxDIR_CONTINUE;
+    }
+private:
+    std::vector<wxString>& files;
+    wxRegEx& regex;
+};
+
 wxIMPLEMENT_CLASS(Searcher, wxEvtHandler);
 
 Searcher::Searcher(wxEvtHandler* parent):
     isRunning{ false }
 {
     this->SetNextHandler(parent);
+    this->regex.Compile(wxT("[^\t]*"));
 }
 
 Searcher::~Searcher()
@@ -37,6 +57,25 @@ Searcher::~Searcher()
     isRunning = false;
     if (thread.joinable())
         thread.join();
+}
+
+bool Searcher::SetFileExtFilter(const wxArrayString& arr)
+{
+    wxString pattern;
+    pattern.reserve(1024);
+    pattern += wxT("[^.]*.(");
+    for (auto& ext: arr)
+    {
+        pattern += ext;
+        pattern += wxT('|');
+    }
+    pattern.RemoveLast(1);
+    pattern += wxT(")$");
+    bool ret{ this->regex.Compile(pattern, wxRE_EXTENDED) };
+    if (!ret)
+        this->regex.Compile(wxT("[^\t]*"));
+
+    return ret;
 }
 
 void Searcher::SetTargetPaths(const std::vector<wxString>& targetPaths)
@@ -69,7 +108,10 @@ void Searcher::Run()
 void Searcher::Process()
 {
     std::vector<wxString> directories;
-    TravellerGetDir traveller{ directories };
+    std::vector<wxString> files;
+
+    TravellerGetDir travellerDir{ directories };
+    TravellerGetFiles travellerFiles{ files, this->regex };
     for (const auto& path : targetPaths)
     {
         if (!isRunning)
@@ -79,14 +121,14 @@ void Searcher::Process()
         
         directories.push_back(path);
         wxDir dir{ path };
-        dir.Traverse(traveller);
+        dir.Traverse(travellerDir);
     }
-    wxArrayString files;
     for (const auto& path : directories)
     {
         if (!isRunning)
             return;
-        wxDir::GetAllFiles(path, &files, wxEmptyString, wxDIR_FILES | wxDIR_HIDDEN | wxDIR_NO_FOLLOW);
+        wxDir dir{ path };
+        dir.Traverse(travellerFiles, wxEmptyString, wxDIR_FILES | wxDIR_HIDDEN);
     }
     int i{};
     for (auto& filePath : files)

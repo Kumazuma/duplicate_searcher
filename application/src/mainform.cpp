@@ -12,4 +12,5 @@ MainForm::MainForm():
     
 	m_dataViewCtrl1->AppendColumn(colCheckIconText);
 	m_dataViewCtrl1->AppendTextColumn(wxT("Size"), 1, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
+    m_dataViewCtrl1->AppendTextColumn(wxT("Modified"), 2, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
 }

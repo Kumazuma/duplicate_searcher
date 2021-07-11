@@ -11,6 +11,19 @@ HashKey::HashKey(std::array<uint8_t, 32> const& key):key{key}
 	hash = ret;
 }
 
+wxString HashKey::GenerateString() const
+{
+	wxString text;
+	text.reserve((1 + 2 * 4) * 4);
+	for (int i = 0; i < 8; ++i)
+	{
+		text += wxString::Format(wxT("%02X%02X%02X%02X-"),
+			key[i * 4 + 0], key[i * 4 + 1], key[i * 4 + 2], key[i * 4 + 3]);
+	}
+	text.erase(text.length() - 1);
+	return text;
+}
+
 uint8_t HashKey::operator[](size_t index) const
 {
 	return key[index];

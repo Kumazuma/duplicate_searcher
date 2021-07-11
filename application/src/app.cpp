@@ -8,8 +8,11 @@ bool App::OnInit()
 	searcher = nullptr;
 	frame = new MainForm{};
 	frame->Show();
-	frame->Bind(wxEVT_BUTTON, &App::OnClickStart, this);
-	viewModel = new DuplicateFileViewModel{ table };
+	frame->Bind(wxEVT_BUTTON, &App::OnClickStart, this, ID_START_CTRL);
+	frame->Bind(wxEVT_BUTTON, &App::OnClickDelectSelctedFiles, this, ID_DEL_SEL_FILES);
+	frame->Bind(wxEVT_BUTTON, &App::OnClickMoveFilesTo, this, ID_MOVE_SEL_FILES_TO);
+
+	viewModel = new DuplicateFileViewModel{ table, selectedFilesTable };
 	auto reportCtrl{ wxDynamicCast(frame->FindWindowById(ID_REPORT), wxDataViewCtrl) };
 	reportCtrl->AssociateModel(viewModel);
 
@@ -28,6 +31,9 @@ void App::OnClickStart(wxCommandEvent& event)
 {
 	auto dirCtrl{ wxDynamicCast(frame->FindWindowById(ID_DIR_CTRL), wxGenericDirCtrl) };
 	auto startBtn{ wxDynamicCast(frame->FindWindowById(ID_START_CTRL), wxButton) };
+	auto filterCtrl{ wxDynamicCast(frame->FindWindowById(ID_EXT_FILTER_CTRL), wxTextCtrl) };
+	auto filter{ filterCtrl->GetValue().Trim() };
+	auto exts{ wxSplit(filter, wxT(' ')) };
 
 	wxArrayString filePaths;
 	std::vector<wxString> arr;
@@ -36,6 +42,14 @@ void App::OnClickStart(wxCommandEvent& event)
 	if (searcher != nullptr)
 		delete searcher;
 	searcher = new Searcher(this);
+	if (exts.size() != 0 && !searcher->SetFileExtFilter(exts))
+	{
+		wxMessageBox(wxT("Failed to generate filter"));
+		delete searcher;
+		searcher = nullptr;
+		return;
+	}
+
 	searcher->Bind(EVT_SEARCHER_PROCESS, &App::OnProcessSearch, this);
 	searcher->Bind(EVT_SEARCHER_SUCCESS, &App::OnProcessSuccess, this);
 	for (auto& dir : filePaths)
@@ -45,26 +59,92 @@ void App::OnClickStart(wxCommandEvent& event)
 	searcher->Run();
 }
 
+void App::OnClickDelectSelctedFiles(wxCommandEvent& event)
+{
+	for (auto& pair : selectedFilesTable)
+	{
+		auto& selectedFiles{ pair.second };
+		auto it{ selectedFiles.begin() };
+		const auto end{ selectedFiles.end() };
+		auto& files{ this->table[pair.first] };
+		if (files.size() == selectedFiles.size())
+			++it;
+
+		if (it == end)
+			continue;
+
+		for (; it != end; ++it)
+		{
+			wxRemoveFile(*it);
+			auto filesIt{ std::find(files.begin(), files.end(), *it) };
+			files.erase(filesIt);
+		}
+		selectedFiles.clear();
+	}
+	UpdateViewModel();
+}
+
+void App::OnClickMoveFilesTo(wxCommandEvent& event)
+{
+	wxDirDialog dirDialog{ frame };
+	if (dirDialog.ShowModal() != wxID_OK)
+		return;
+	wxString dirMoveTo{ dirDialog.GetPath() };
+	for (auto& pair : selectedFilesTable)
+	{
+		auto& files{ pair.second };
+		for (auto& file : files)
+		{
+			wxFileName fileName{ file };
+			wxFileName movedFileName;
+			movedFileName.SetFullName(fileName.GetFullPath());
+			movedFileName.SetPath(dirMoveTo);
+			wxString fullPath{ movedFileName.GetFullPath() };
+			if (wxRenameFile(fileName.GetFullPath(), fullPath))
+			{
+				auto& files{ table[pair.first] };
+				auto it{ std::find(files.begin(), files.end(), file) };
+				if (it != files.end())
+					it->swap(fullPath);
+			}
+		}
+		selectedFilesTable[pair.first].clear();
+	}
+	UpdateViewModel();
+}
+
 void App::OnProcessSearch(wxThreadEvent& event)
 {
 	auto process{ event.GetPayload<std::pair<int, int>>() };
 	auto msg{ wxString::Format(wxT("%d/%d ¿Ï·á\n"), process.first,process.second) };
-	auto log{ wxDynamicCast(frame->FindWindowById(ID_LOG_CTRL), wxTextCtrl) };
-	
-	log->AppendText(msg);
+	auto gauge{ wxDynamicCast(frame->FindWindowById(ID_PROGRESS), wxGauge) };
+	gauge->Freeze();
+	if (gauge->GetRange() != process.second)
+	{
+		gauge->SetRange(process.second);
+	}
+	gauge->SetValue(process.first);
+	gauge->Thaw();
+	wxPrintf(msg);
 }
 
 void App::OnProcessSuccess(wxThreadEvent& event)
 {
 	auto startBtn{ wxDynamicCast(frame->FindWindowById(ID_START_CTRL), wxButton) };
-	auto reportCtrl{ wxDynamicCast(frame->FindWindowById(ID_REPORT), wxDataViewCtrl) };
 
 	startBtn->Enable();
 
 	table.clear();
 	searcher->GetDuplicateFiles(&table);
+	UpdateViewModel();
+}
+
+void App::UpdateViewModel()
+{
+	auto reportCtrl{ wxDynamicCast(frame->FindWindowById(ID_REPORT), wxDataViewCtrl) };
+
 	viewModel->DecRef();
-	viewModel = new DuplicateFileViewModel{ table };
+	viewModel = new DuplicateFileViewModel{ table, selectedFilesTable };
 	reportCtrl->Freeze();
 	reportCtrl->ClearColumns();
 
@@ -78,6 +158,7 @@ void App::OnProcessSuccess(wxThreadEvent& event)
 	);
 	reportCtrl->AppendColumn(colCheckIconText);
 	reportCtrl->AppendTextColumn(wxT("Size"), 1, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
+	reportCtrl->AppendTextColumn(wxT("Modified"), 2, wxDATAVIEW_CELL_ACTIVATABLE, -1, static_cast<wxAlignment>(wxALIGN_LEFT), wxDATAVIEW_COL_RESIZABLE);
 
 	wxDataViewItemArray arr;
 	viewModel->GetChildren(wxDataViewItem{ nullptr }, arr);
@@ -85,48 +166,6 @@ void App::OnProcessSuccess(wxThreadEvent& event)
 	{
 		reportCtrl->ExpandChildren(it);
 	}
-	
-	reportCtrl->Thaw();
-	//
-	//reportCtrl->AssociateModel();
-	//int n{};
-	//int groupId{};
-	//reportCtrl->Freeze();
-	//reportCtrl->DeleteAllItems();
-	//for (auto& pair : table)
-	//{
-	//	auto groupIdStr{ wxString::Format(wxT("%d"), groupId) };
-	//	for (auto& file : pair.second)
-	//	{
-	//		wxListItem item;
-	//		item.SetId(n);
-	//		item.SetText(file);
-	//		reportCtrl->InsertItem(item);
-	//		reportCtrl->SetItem(n, 0, file);
-	//		reportCtrl->SetItem(n, 1, groupIdStr);
 
-	//		wxString fileSizeStr;
-	//		auto fileSize{ wxFileName::GetSize(file) };
-	//		if (fileSize < 1024)
-	//		{
-	//			fileSizeStr = wxString::Format(wxT("%d bytes"), (int)fileSize.GetValue());
-	//		}
-	//		else if(fileSize < 1024 * 1024)
-	//		{
-	//			fileSizeStr = wxString::Format(wxT("%f KiB"), fileSize.GetValue() /1024.0);
-	//		}
-	//		else if (fileSize < 1024 * 1024 * 1024)
-	//		{
-	//			fileSizeStr = wxString::Format(wxT("%f MiB"), fileSize.GetValue() / (1024.0 * 1024.0));
-	//		}
-	//		else if (fileSize.GetValue() < 1024ull * 1024ull * 1024ull * 1024ull)
-	//		{
-	//			fileSizeStr = wxString::Format(wxT("%f GiB"), fileSize.GetValue() / (1024.0 * 1024.0 * 1024.0));
-	//		}
-	//		reportCtrl->SetItem(n, 2, fileSizeStr);
-	//		++n;
-	//	}
-	//	++groupId;
-	//}
-	//reportCtrl->Thaw();
+	reportCtrl->Thaw();
 }

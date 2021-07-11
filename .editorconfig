@@ -1,0 +1,4 @@
+[*.h]
+charset = utf8
+[*.cpp]
+charset = utf8
