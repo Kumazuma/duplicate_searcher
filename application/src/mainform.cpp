@@ -1,7 +1,7 @@
 #include "mainform.h"
 
 MainForm::MainForm():
-	GUIMainFrame{nullptr, wxID_ANY, wxT("")}
+	GUIMainFrame{nullptr, wxID_ANY}
 {
     wxDataViewColumn* const colCheckIconText = new wxDataViewColumn
     (

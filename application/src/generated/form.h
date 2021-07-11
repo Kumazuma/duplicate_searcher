@@ -75,7 +75,7 @@ class GUIMainFrame : public wxFrame
 
 	public:
 
-		GUIMainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 837,676 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
+		GUIMainFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Duplicate Searcher"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 837,676 ), long style = wxDEFAULT_FRAME_STYLE|wxTAB_TRAVERSAL );
 		wxAuiManager m_mgr;
 
 		~GUIMainFrame();

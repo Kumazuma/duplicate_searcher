@@ -180,7 +180,8 @@ void App::OnClickAddDir(wxCommandEvent& event)
 	for (auto& path : paths)
 	{
 		if (incPaths.find(path) != incPaths.end())
-			return;
+			continue;
+
 		int n{ inclCtrl->Append(path) };
 		incPaths.emplace(path, n);
 	}
