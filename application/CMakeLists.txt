@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(cmake-wx VERSION 0.1.0)
+project(duplicate-searcher VERSION 0.1.0)
 
 include(CTest)
 enable_testing()
@@ -17,11 +17,11 @@ set(SOURCES
 	"src/hashkey.cpp"
 	"src/mainform.cpp"
 	 "src/duplicate_file_view_model.cpp")
-add_executable(cmake-wx WIN32 ${SOURCES})
-target_link_libraries(cmake-wx ${wxWidgets_LIBRARIES})
-target_link_libraries(cmake-wx lsh)
+add_executable(duplicate-searcher WIN32 ${SOURCES})
+target_link_libraries(duplicate-searcher ${wxWidgets_LIBRARIES})
+target_link_libraries(duplicate-searcher lsh)
 if(UNIX)
-target_link_libraries(cmake-wx -lX11)
+target_link_libraries(duplicate-searcher -lX11)
 endif()
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

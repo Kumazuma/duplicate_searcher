@@ -23,6 +23,9 @@
 #include "../include/lsh.h"
 #include "lsh256.h"
 #include "lsh512.h"
+void lsh_init_simd(){
+	// DO NOT ANYTHING
+}
 
 lsh_err lsh_init(union LSH_Context * state, const lsh_type algtype){
 	if (state == NULL){

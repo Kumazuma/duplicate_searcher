@@ -3,64 +3,59 @@ project(LSH VERSION 1.0.2)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 
-if(${CMAKE_ANDROID_ARCH_ABI} MATCHES "x64")
-	set(X64_COMMON_SRCS 
-		src/x64/cpu_info_ia32.c
-		src/x64/hmac.c
-		src/x64/lsh.c
-	)
-	if(${SIMD} MATCHES "avx2")
-		set(SRCS
-			${X64_COMMON_SRCS}
-			src/x64/sse2/lsh256_avx2.c
-			src/x64/sse2/lsh512_avx2.c
-		)
-	elseif(${SIMD} MATCHES "ssse3")
-		set(SRCS
-			${X64_COMMON_SRCS}
-			src/x64/ssse3/lsh256_ssse3.c
-			src/x64/ssse3/lsh512_ssse3.c
-		)
-	else()
-		set(SRCS
-			${X64_COMMON_SRCS}
-			src/x64/sse2/lsh256_sse2.c
-			src/x64/sse2/lsh512_sse2.c
-		)
+set(TARGET_ARCH unknown CACHE STRING "Target Architecture for simd")
+set(SIMD CACHE STRING "Simd")
+set_property(CACHE TARGET_ARCH PROPERTY STRINGS unknown x86 x64 arm)
+set_property(CACHE SIMD PROPERTY STRINGS sse2 ssse3 avx2)
+if(${TARGET_ARCH} MATCHES "unknown")
+	if(${CMAKE_MODULE_LINKER_FLAGS} MATCHES "x86")
+		set(TARGET_ "x86")
+	elseif(${CMAKE_MODULE_LINKER_FLAGS} MATCHES "x64")
+		set(TARGET_ "x64")
+	elseif(${CMAKE_MODULE_LINKER_FLAGS} MATCHES "arm")
+		set(TARGET_ "arm")
 	endif()
-elseif(${CMAKE_ANDROID_ARCH_ABI} MATCHES "x86")
-	set(X64_COMMON_SRCS 
-		src/x64/cpu_info_ia32.c
-		src/x64/hmac.c
-		src/x64/lsh.c
-	)
-	if(${SIMD} MATCHES "avx2")
-		set(SRCS
-			${X64_COMMON_SRCS}
-			src/x64/sse2/lsh256_avx2.c
-			src/x64/sse2/lsh512_avx2.c
-		)
-	elseif(${SIMD} MATCHES "ssse3")
-		set(SRCS
-			${X64_COMMON_SRCS}
-			src/x64/ssse3/lsh256_ssse3.c
-			src/x64/ssse3/lsh512_ssse3.c
-		)
-	elseif(${SIMD} MATCHES "sse2")
-		set(SRCS
-			${X64_COMMON_SRCS}
-			src/x64/sse2/lsh256_sse2.c
-			src/x64/sse2/lsh512_sse2.c
-		)
-	else()
-		set(SRCS
-			${X64_COMMON_SRCS}
-			src/x64/no_arch/lsh256.c
-			src/x64/no_arch/lsh512.c
-		)
-	endif()
-elseif(${CMAKE_ANDROID_ARCH_ABI} MATCHES "arm")
+endif()
 
+if(${TARGET_} MATCHES "x64")
+	set(SRCS 
+		src/x64/cpu_info_ia32.c
+		src/x64/hmac.c
+		src/x64/lsh.c
+		src/x64/no_arch/lsh256.c
+		src/x64/no_arch/lsh512.c
+		src/x64/avx2/lsh256_avx2.c
+		src/x64/avx2/lsh512_avx2.c
+		src/x64/ssse3/lsh256_ssse3.c
+		src/x64/ssse3/lsh512_ssse3.c
+		src/x64/sse2/lsh256_sse2.c
+		src/x64/sse2/lsh512_sse2.c
+		src/x64/xop/lsh256_xop.c
+		src/x64/xop/lsh512_xop.c
+	)
+elseif(${TARGET_} MATCHES "x86")
+	set(SRCS 
+		src/x64/cpu_info_ia32.c
+		src/x64/hmac.c
+		src/x64/lsh.c
+		src/x64/no_arch/lsh256.c
+		src/x64/no_arch/lsh512.c
+		src/x64/avx2/lsh256_avx2.c
+		src/x64/avx2/lsh512_avx2.c
+		src/x64/ssse3/lsh256_ssse3.c
+		src/x64/ssse3/lsh512_ssse3.c
+		src/x64/sse2/lsh256_sse2.c
+		src/x64/sse2/lsh512_sse2.c
+		src/x64/xop/lsh256_xop.c
+		src/x64/xop/lsh512_xop.c
+	)
+elseif(${TARGET_} MATCHES "arm")
+set(SRCS
+	src/general/hmac.c
+	src/general/lsh.c
+	src/general/lsh256.c
+	src/general/lsh512.c
+)
 else()
 set(SRCS
 	src/general/hmac.c
@@ -69,5 +64,5 @@ set(SRCS
 	src/general/lsh512.c
 )
 endif()
-message(STATUS "Platform is " ${CMAKE_ANDROID_ARCH_ABI})
+message(STATUS "Platform is " ${TARGET_})
 add_library(lsh ${SRCS})

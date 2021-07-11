@@ -1,10 +1,13 @@
 #include "app.h"
 #include "mainform.h"
 #include "duplicate_file_view_model.h"
+#include <lsh/lsh.h>
 wxIMPLEMENT_APP(App);
 
 bool App::OnInit()
 {
+	lsh_init_simd();
+
 	searcher = nullptr;
 	frame = new MainForm{};
 	frame->Show();
