@@ -149,15 +149,15 @@ void DuplicateFileViewModel::GetValue(wxVariant& variant, const wxDataViewItem& 
 			}
 			else if (filesize < 1024 * 1024)
 			{
-				variant = wxString::Format(wxT("%f kib"), filesize / 1024.0);
+				variant = wxString::Format(wxT("%f KiB"), filesize / 1024.0);
 			}
 			else if (filesize < 1024 * 1024 * 1024)
 			{
-				variant = wxString::Format(wxT("%f mib"), filesize / (1024.0 * 1024.0));
+				variant = wxString::Format(wxT("%f MiB"), filesize / (1024.0 * 1024.0));
 			}
 			else if (filesize < 1024ull * 1024ull * 1024ull * 1024ull)
 			{
-				variant = wxString::Format(wxT("%f gib"), filesize / (1024.0 * 1024.0 * 1024.0));
+				variant = wxString::Format(wxT("%f GiB"), filesize / (1024.0 * 1024.0 * 1024.0));
 			}
 			break;
 		case 2:
