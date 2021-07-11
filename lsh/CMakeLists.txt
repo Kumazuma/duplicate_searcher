@@ -19,35 +19,35 @@ endif()
 
 if(${TARGET_} MATCHES "x64")
 	set(SRCS 
-		src/x64/cpu_info_ia32.c
-		src/x64/hmac.c
-		src/x64/lsh.c
-		src/x64/no_arch/lsh256.c
-		src/x64/no_arch/lsh512.c
-		src/x64/avx2/lsh256_avx2.c
-		src/x64/avx2/lsh512_avx2.c
-		src/x64/ssse3/lsh256_ssse3.c
-		src/x64/ssse3/lsh512_ssse3.c
-		src/x64/sse2/lsh256_sse2.c
-		src/x64/sse2/lsh512_sse2.c
-		src/x64/xop/lsh256_xop.c
-		src/x64/xop/lsh512_xop.c
+		src/x86_64/cpu_info_ia32.c
+		src/x86_64/hmac.c
+		src/x86_64/lsh.c
+		src/x86_64/no_arch/lsh256.c
+		src/x86_64/no_arch/lsh512.c
+		src/x86_64/avx2/lsh256_avx2.c
+		src/x86_64/avx2/lsh512_avx2.c
+		src/x86_64/ssse3/lsh256_ssse3.c
+		src/x86_64/ssse3/lsh512_ssse3.c
+		src/x86_64/sse2/lsh256_sse2.c
+		src/x86_64/sse2/lsh512_sse2.c
+		src/x86_64/xop/lsh256_xop.c
+		src/x86_64/xop/lsh512_xop.c
 	)
 elseif(${TARGET_} MATCHES "x86")
 	set(SRCS 
-		src/x64/cpu_info_ia32.c
-		src/x64/hmac.c
-		src/x64/lsh.c
-		src/x64/no_arch/lsh256.c
-		src/x64/no_arch/lsh512.c
-		src/x64/avx2/lsh256_avx2.c
-		src/x64/avx2/lsh512_avx2.c
-		src/x64/ssse3/lsh256_ssse3.c
-		src/x64/ssse3/lsh512_ssse3.c
-		src/x64/sse2/lsh256_sse2.c
-		src/x64/sse2/lsh512_sse2.c
-		src/x64/xop/lsh256_xop.c
-		src/x64/xop/lsh512_xop.c
+		src/x86_64/cpu_info_ia32.c
+		src/x86_64/hmac.c
+		src/x86_64/lsh.c
+		src/x86_64/no_arch/lsh256.c
+		src/x86_64/no_arch/lsh512.c
+		src/x86_64/avx2/lsh256_avx2.c
+		src/x86_64/avx2/lsh512_avx2.c
+		src/x86_64/ssse3/lsh256_ssse3.c
+		src/x86_64/ssse3/lsh512_ssse3.c
+		src/x86_64/sse2/lsh256_sse2.c
+		src/x86_64/sse2/lsh512_sse2.c
+		src/x86_64/xop/lsh256_xop.c
+		src/x86_64/xop/lsh512_xop.c
 	)
 elseif(${TARGET_} MATCHES "arm")
 set(SRCS
