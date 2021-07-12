@@ -153,7 +153,7 @@ void Searcher::Process()
         {
             auto size{ bufferInput.Read(chunk, sizeof(chunk)).LastRead() };
             if (size != 0)
-                lsh_update(&context, chunk, size);
+                lsh_update(&context, chunk, size * 8);
             if (!isRunning)
                 return;
         }
