@@ -1,0 +1,3 @@
+[submodule "lsh"]
+	path = lsh
+	url = https://github.com/Kumazuma/lsh.git
